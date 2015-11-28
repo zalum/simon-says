@@ -38,8 +38,6 @@ var beastResource = beast.resource;
 
 var indexTemplate = readIndexTemplate();
 
-console.log("template" + indexTemplate)
-
 function isRestart(request) {
     return request.body.restart == "true";
 }
@@ -85,6 +83,14 @@ function getMaxLevels() {
 function isGameFinished(gameState) {
     return gameState.levelNo >= getMaxLevels();
 }
+function getColorsForLevel(levelNo) {
+    return levels[levelNo].colors;
+}
+function printColorsForNewLevel(gameState) {
+    var colorsForLevel = getColorsForLevel(gameState.levelNo);
+    console.log(colorsForLevel)
+    mustache.render(indexTemplate,{colors: colorsForLevel});
+}
 function nextStep(gameState, request) {
     if (nextColorToMatch(gameState) == userInputColor(request)) {
         gameState.stepInLevel++;
@@ -98,7 +104,15 @@ function nextStep(gameState, request) {
         }
     }
 }
+function printEmptyColors() {
+    mustache.render(indexTemplate, {colors: []});
+}
 function printGameState(gameState) {
+    if(gameState.stepInLevel == 0){
+        printColorsForNewLevel(gameState);
+    }else{
+        printEmptyColors();
+    }
     return mustache.render(indexTemplate, gameState);
 }
 function printMessage(message) {
@@ -134,14 +148,19 @@ var server = app.listen(port, function () {
 });
 
 var levels = [
-    {
-        colors: ["red", "green", "blue"]
-    }
-    , {
-        colors: ["red", "red", "red"]
-    }, {
-        colors: ["green", "green", "green"]
-    }
+    { colors: ["red"] } ,
+    { colors: ["red", "green"] } ,
+    { colors: ["red", "green", "blue"] } ,
+    { colors: ["red", "green", "blue","green"] } ,
+    { colors: ["red", "green", "blue","green", "yellow"] } ,
+    { colors: ["red", "green", "blue","green", "yellow", "blue"] } ,
+    { colors: ["red", "green", "blue","green", "yellow", "blue","red"] } ,
+    { colors: ["red", "green", "blue","green", "yellow", "blue","red", "green"] } ,
+    { colors: ["red", "green", "blue","green", "yellow", "blue","red", "green", "blue"] } ,
+    { colors: ["red", "green", "blue","green", "yellow", "blue","red", "green", "blue","blue",] } ,
+    { colors: ["red", "green", "blue","green", "yellow", "blue","red", "green", "blue","blue", "red"] } ,
+    { colors: ["red", "green", "blue","green", "yellow", "blue","red", "green", "blue","blue", "red", "yellow"] } ,
+    { colors: ["red", "green", "blue","green", "yellow", "blue","red", "green", "blue","blue", "red", "yellow", "red"] } ,
 ]
 
 function readIndexTemplate() {

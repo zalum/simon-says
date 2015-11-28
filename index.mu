@@ -35,6 +35,7 @@
 <span>
 <p>{{infoMessage}}</p>
 <p>You have Level {{levelNo}} and step {{stepInLevel}}</p>
+<p>Level colors {{#colors}} <li> {{.}} </li> {{/colors}} <p>
 <span>
 </body>
 </html>
