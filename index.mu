@@ -1,7 +1,8 @@
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
-    <title>xway | get-started</title>
+    <title>Simon says ...</title>
 </head>
 <style type="text/css">
     body {
@@ -9,33 +10,43 @@
     }
 </style>
 <body>
-<!-- index.html, an optional user interface :] -->
-<h1>
-    Hello Netbeast community! <a style="color: red">&#9829;</a>
-</h1>
+<div style="display: block; margin-left: auto; margin-right: auto;">
+    <!-- index.html, an optional user interface :] -->
+    <h1>Simon says ...</h1>
 
-<form action="" method="POST">
-    <button name="blue" value="true">
-        Blue
-    </button>
-    <button name="red" value="true">
-        Red
-    </button>
-    <button name="green" value="true">
-        Green
-    </button>
-    <button name="yellow" value="true">
-        Yellow
-    </button>
-    <button name="restart" value="true">
-        Restart
-    </button>
-</form>
+    <span>
+    <p>{{infoMessage}}</p>
+    <p>You have Level {{levelNo}} and step {{stepInLevel}}</p>
+    <p>Level colors {{#colors}} <li> {{.}} </li> {{/colors}} <p>
+    </span>
 
-<span>
-<p>{{infoMessage}}</p>
-<p>You have Level {{levelNo}} and step {{stepInLevel}}</p>
-<p>Level colors {{#colors}} <li> {{.}} </li> {{/colors}} <p>
-<span>
+    <form action="/restart" method="POST">
+        <button name="restart" value="true">
+            Restart
+        </button>
+    </form>
+
+    <p>
+        Description: Simon flashes the light in a specific color.
+        You have to remember the color and press the same colored button here.
+        <br>
+        Then Simon builds a sequence of colors and you have to remember and press the sequence ofcolors again!
+    </p>
+
+    <div style="display: block; position: absolute;">
+        <img src="bowling_design.png" >
+
+        <form action="/" method="POST">
+            <button name="green" value="true"  style="position: absolute; top: 0px; left: 0px; height: 50%; width: 50%; opacity: 0;"></button>
+            <button name="blue" value="true"   style="position: absolute; top: 0px; right: 0px; height: 50%; width: 50%; opacity: 0;"></button>
+            <button name="red" value="true"    style="position: absolute; bottom: 0px; left: 0px; height: 50%; width: 50%; opacity: 0;"></button>
+            <button name="yellow" value="true" style="position: absolute; bottom: 0px; right: 0px; height: 50%; width: 50%; opacity: 0;"></button>
+
+
+        </form>
+
+    </div>
+</div>
+
 </body>
 </html>

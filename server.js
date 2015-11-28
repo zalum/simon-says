@@ -38,6 +38,31 @@ var beastResource = beast.resource;
 
 var indexTemplate = readIndexTemplate();
 
+var LifxClient = require('node-lifx').Client;
+var client = new LifxClient();
+
+client.on('light-new', function (light) {
+    console.log(light);
+    console.log('light-new');
+    light.color(270, 100, 100);
+});
+
+client.on('light-online', function (light) {
+    console.log(light);
+    console.log('light-online');
+    light.color(0, 100, 100);
+});
+
+client.startDiscovery();
+console.log('start');
+setTimeout(function () {
+    client.stopDiscovery();
+    console.log('stop');
+}, 7000);
+
+client.init();
+
+
 function isRestart(request) {
     return request.body.restart == "true";
 }
@@ -50,12 +75,6 @@ function newGame() {
         finished: false,
 
     }
-}
-
-function garbagePost(response, request) {
-    response.send("You pushed" + request.body.color);
-    var colorHue = 10000 % 65535;
-    beastResource('lights').set({on: 1, bri: 255, hue: colorHue, sat: 255})
 }
 
 function nextColorToMatch(gameState) {
@@ -84,12 +103,29 @@ function isGameFinished(gameState) {
     return gameState.levelNo >= getMaxLevels();
 }
 function getColorsForLevel(levelNo) {
-    return levels[levelNo].colors;
+    return levels[levelNo].colors.slice();
 }
-function printColorsForNewLevel(gameState) {
+
+function flashColors(colorsForLevel) {
+    colorsForLevel.forEach(function (color, index) {
+            console.log("index= "+index);
+            var multiplier = (index + 1);
+            setTimeout(function () {
+                flashLight(color);
+                flashLight(color);
+            }, multiplier * 3000 -1000);
+
+            setTimeout(function () {
+                turnLightOff();
+                turnLightOff();
+            }, multiplier * 3000);
+        }
+    )
+    ;
+}
+function flashLevel(gameState) {
     var colorsForLevel = getColorsForLevel(gameState.levelNo);
-    console.log(colorsForLevel)
-    mustache.render(indexTemplate,{colors: colorsForLevel});
+    flashColors(colorsForLevel);
 }
 function nextStep(gameState, request) {
     if (nextColorToMatch(gameState) == userInputColor(request)) {
@@ -97,6 +133,7 @@ function nextStep(gameState, request) {
 
         if (isLevelFinished(gameState)) {
             gameState = goToNextLevel(gameState);
+            flashLevel(gameState);
         }
 
         if (isGameFinished(gameState)) {
@@ -104,39 +141,41 @@ function nextStep(gameState, request) {
         }
     }
 }
-function printEmptyColors() {
-    mustache.render(indexTemplate, {colors: []});
-}
+
 function printGameState(gameState) {
-    if(gameState.stepInLevel == 0){
-        printColorsForNewLevel(gameState);
-    }else{
-        printEmptyColors();
-    }
     return mustache.render(indexTemplate, gameState);
 }
 function printMessage(message) {
     return mustache.render(indexTemplate, {infoMessage: message});
 }
 function printResponse(response, gameState) {
+
     if (gameState.finished) {
         response.send(printMessage("Congratulations you finished!"));
     } else {
         response.send(printGameState(gameState));
     }
 }
+
+app.post("/restart", function (request, response) {
+    console.log("restart");
+    gameState = newGame();
+    response.send(printMessage("you have restarted"));
+    //flashLevel(gameState);
+    printResponse(response, gameState);
+});
+
+function logGameState(gameState) {
+    return gameState.stepInLevel + "," + gameState.levelNo;
+}
 app.post("/",
     function (request, response) {
         if (gameState.finished) {
+            console.log("post/newgame" + logGameState(gameState));
             gameState = newGame();
         }
-        if (isRestart(request)) {
-            gameState = newGame();
-            response.send(printMessage("you have restarted"));
-        } else {
-            nextStep(gameState, request);
 
-        }
+        nextStep(gameState, request);
         printResponse(response, gameState);
     }
 )
@@ -148,19 +187,19 @@ var server = app.listen(port, function () {
 });
 
 var levels = [
-    { colors: ["red"] } ,
-    { colors: ["red", "green"] } ,
-    { colors: ["red", "green", "blue"] } ,
-    { colors: ["red", "green", "blue","green"] } ,
-    { colors: ["red", "green", "blue","green", "yellow"] } ,
-    { colors: ["red", "green", "blue","green", "yellow", "blue"] } ,
-    { colors: ["red", "green", "blue","green", "yellow", "blue","red"] } ,
-    { colors: ["red", "green", "blue","green", "yellow", "blue","red", "green"] } ,
-    { colors: ["red", "green", "blue","green", "yellow", "blue","red", "green", "blue"] } ,
-    { colors: ["red", "green", "blue","green", "yellow", "blue","red", "green", "blue","blue",] } ,
-    { colors: ["red", "green", "blue","green", "yellow", "blue","red", "green", "blue","blue", "red"] } ,
-    { colors: ["red", "green", "blue","green", "yellow", "blue","red", "green", "blue","blue", "red", "yellow"] } ,
-    { colors: ["red", "green", "blue","green", "yellow", "blue","red", "green", "blue","blue", "red", "yellow", "red"] } ,
+    {colors: ["red"]},
+    {colors: ["red", "green"]},
+    {colors: ["red", "green", "blue"]},
+    {colors: ["red", "green", "blue", "green"]},
+    {colors: ["red", "green", "blue", "green", "yellow"]},
+    {colors: ["red", "green", "blue", "green", "yellow", "blue"]},
+    {colors: ["red", "green", "blue", "green", "yellow", "blue", "red"]},
+    {colors: ["red", "green", "blue", "green", "yellow", "blue", "red", "green"]},
+    {colors: ["red", "green", "blue", "green", "yellow", "blue", "red", "green", "blue"]},
+    {colors: ["red", "green", "blue", "green", "yellow", "blue", "red", "green", "blue", "blue",]},
+    {colors: ["red", "green", "blue", "green", "yellow", "blue", "red", "green", "blue", "blue", "red"]},
+    {colors: ["red", "green", "blue", "green", "yellow", "blue", "red", "green", "blue", "blue", "red", "yellow"]},
+    {colors: ["red", "green", "blue", "green", "yellow", "blue", "red", "green", "blue", "blue", "red", "yellow", "red"]},
 ]
 
 function readIndexTemplate() {
@@ -175,8 +214,41 @@ function readIndexTemplate() {
 
 }
 
+function turnLightOff() {
+    console.log("time=" + Date.now() + " turnoff");
+    var lightsarray = client.lights();
+    if (lightsarray.length == 0) {
+        console.log('shit, no light available...')
+    }
+    lightsarray.forEach(function (light) {
+        light.color(0, 0, 0);
+    });
+}
 
+function flashLight(color) {
+    console.log("time=" + Date.now() + "color to flash" + color);
+    colornumber = 0;
+    if (color == 'yellow') {
+        colornumber = 60;
+    }
+    if (color == 'green') {
+        colornumber = 120;
+    }
+    if (color == 'blue') {
+        colornumber = 240;
+    }
+    if (color == 'red') {
+        colornumber = 0;
+    }
 
+    var lightsarray = client.lights();
+    if (lightsarray.length == 0) {
+        console.log('shit, no light available...')
+    }
+    lightsarray.forEach(function (light) {
+        light.color(colornumber, 100, 100);
+    });
+}
 
 
 
