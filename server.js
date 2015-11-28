@@ -17,6 +17,7 @@
 /* Requires node.js libraries */
 var express = require('express');
 var beast = require('netbeast')
+var mustache = require('mustache');
 var app = express();
 
 // xyos apps can accept the port to be launched by parameters
@@ -29,14 +30,15 @@ if (isNaN(port)) {
 }
 
 var gameState = newGame();
-
 app.use(express.static(__dirname));
 var bodyParser = require('body-parser')
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({extended: false}))
-
 var beastResource = beast.resource;
 
+var indexTemplate = readIndexTemplate();
+
+console.log("template" + indexTemplate)
 
 function isRestart(request) {
     return request.body.restart == "true";
@@ -96,26 +98,32 @@ function nextStep(gameState, request) {
         }
     }
 }
+function printGameState(gameState) {
+    return mustache.render(indexTemplate, gameState);
+}
+function printMessage(message) {
+    return mustache.render(indexTemplate, {infoMessage: message});
+}
 function printResponse(response, gameState) {
     if (gameState.finished) {
-        response.send("Congratulations you finished");
+        response.send(printMessage("Congratulations you finished!"));
     } else {
-        response.send("you have Level " + gameState.levelNo + " and step " + gameState.stepInLevel);
+        response.send(printGameState(gameState));
     }
 }
 app.post("/",
     function (request, response) {
-        if(gameState.finished){
+        if (gameState.finished) {
             gameState = newGame();
         }
         if (isRestart(request)) {
             gameState = newGame();
-            response.send("you have restarted");
+            response.send(printMessage("you have restarted"));
         } else {
             nextStep(gameState, request);
 
         }
-        printResponse(response,gameState);
+        printResponse(response, gameState);
     }
 )
 
@@ -135,6 +143,19 @@ var levels = [
         colors: ["green", "green", "green"]
     }
 ]
+
+function readIndexTemplate() {
+    var fs = require('fs');
+    return fs.readFile(__dirname + '/index.mu', function (err, data) {
+        if (err) {
+            throw err;
+        }
+        indexTemplate = data.toString();
+    });
+    return indexTemplate;
+
+}
+
 
 
 
