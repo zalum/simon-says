@@ -28,7 +28,7 @@ if (isNaN(port)) {
     process.kill(1);
 }
 
-var gameState;
+var gameState = newGame();
 
 app.use(express.static(__dirname));
 var bodyParser = require('body-parser')
@@ -39,14 +39,16 @@ var beastResource = beast.resource;
 
 
 function isRestart(request) {
-    return true;
+    return request.body.restart == "true";
 }
 
-function restartGame() {
+function newGame() {
     return {
-        roundNo: 1,
+        levelNo: 0,
         points: 0,
-        steps: 1
+        stepInLevel: 0,
+        finished: false,
+
     }
 }
 
@@ -56,18 +58,64 @@ function garbagePost(response, request) {
     beastResource('lights').set({on: 1, bri: 255, hue: colorHue, sat: 255})
 }
 
-function nextStep() {
-    gameState.steps++;
+function nextColorToMatch(gameState) {
+    return levels[gameState.levelNo].colors[gameState.stepInLevel];
+}
+function userInputColor(request) {
+    return Object.keys(request.body)[0];
+}
+function goToNextLevel(gameState) {
+    gameState.levelNo++;
+    gameState.stepInLevel = 0;
+    return gameState;
+}
+function getMaxStepOfLevel(levelNo) {
+    return levels[levelNo].colors.length;
+}
+function isLevelFinished(gameState) {
+    return gameState.stepInLevel >= getMaxStepOfLevel(gameState.levelNo);
+}
+
+function getMaxLevels() {
+    return levels.length;
+}
+
+function isGameFinished(gameState) {
+    return gameState.levelNo >= getMaxLevels();
+}
+function nextStep(gameState, request) {
+    if (nextColorToMatch(gameState) == userInputColor(request)) {
+        gameState.stepInLevel++;
+
+        if (isLevelFinished(gameState)) {
+            gameState = goToNextLevel(gameState);
+        }
+
+        if (isGameFinished(gameState)) {
+            gameState.finished = true;
+        }
+    }
+}
+function printResponse(response, gameState) {
+    if (gameState.finished) {
+        response.send("Congratulations you finished");
+    } else {
+        response.send("you have Level " + gameState.levelNo + " and step " + gameState.stepInLevel);
+    }
 }
 app.post("/",
     function (request, response) {
+        if(gameState.finished){
+            gameState = newGame();
+        }
         if (isRestart(request)) {
-            gameState = restartGame();
+            gameState = newGame();
             response.send("you have restarted");
         } else {
-            nextStep(request);
+            nextStep(gameState, request);
+
         }
-        response.send("you have " + gameState);
+        printResponse(response,gameState);
     }
 )
 
@@ -76,6 +124,18 @@ var server = app.listen(port, function () {
         server.address().address,
         server.address().port);
 });
+
+var levels = [
+    {
+        colors: ["red", "green", "blue"]
+    }
+    , {
+        colors: ["red", "red", "red"]
+    }, {
+        colors: ["green", "green", "green"]
+    }
+]
+
 
 
 
