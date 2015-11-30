@@ -1,6 +1,6 @@
 = Simon Says
 
-Simon says (https://en.wikipedia.org/wiki/Simon_Says) implementation during the IOT Hackaton
+Simon says ( https://en.wikipedia.org/wiki/Simon_%28game%29 ) implementation during the IOT Hackaton
 http://www.meetup.com/IoTMunich/events/226672020/
 
 Team:
